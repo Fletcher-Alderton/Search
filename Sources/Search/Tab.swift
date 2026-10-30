@@ -1340,6 +1340,7 @@ final class Tab: ObservableObject, Identifiable {
             show(own)
             return
         }
+        TabMemoryMonitor.shared.forget(id)
         // Out of one of Search's own pages, onto the web: Back comes back.
         if let page {
             behind = page
@@ -1389,6 +1390,7 @@ final class Tab: ObservableObject, Identifiable {
             show(own)
             return
         }
+        TabMemoryMonitor.shared.forget(id)
         address = url
         self.title = title
         self.name = name
@@ -1413,6 +1415,7 @@ final class Tab: ObservableObject, Identifiable {
             address = home
             title = home.host ?? ""
         }
+        if let built { TabMemoryMonitor.shared.captureSleep(tab: self, web: built) }
         pending = url
         memory = nil
         picture = nil
@@ -1437,6 +1440,7 @@ final class Tab: ObservableObject, Identifiable {
     /// that can't come back, which is why the browser asks `unsaved` first.
     func sleep(picture: Data?) {
         guard let url = address, let built else { return }
+        TabMemoryMonitor.shared.captureSleep(tab: self, web: built)
         memory = built.interactionState
         self.picture = picture
         pending = url
@@ -1671,6 +1675,7 @@ final class Tab: ObservableObject, Identifiable {
     @discardableResult
     func wake() -> Bool {
         guard let url = pending else { return false }
+        TabMemoryMonitor.shared.didWake(id)
         pending = nil
         failure = nil
         reading = 0
@@ -1780,6 +1785,7 @@ final class Tab: ObservableObject, Identifiable {
     /// Called when the tab is thrown away. Without it the view keeps running
     /// whatever the page left behind — timers, video, sockets.
     func close() {
+        TabMemoryMonitor.shared.forget(id)
         onZoom = nil
         onLink = nil
         onPick = nil
